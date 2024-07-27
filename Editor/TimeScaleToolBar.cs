@@ -136,7 +136,7 @@ namespace bl4st.TimeScaleToolbar
                     EditorGUILayout.LabelField("or hover the mouse above the toolbar", italicStyle);
 
                     EditorPrefs.SetBool(key_enabled, enabled);
-                    EditorPrefs.SetFloat(key_maxScale, timeScale);
+                    EditorPrefs.SetFloat(key_maxScale, maxScale);
                     EditorPrefs.SetInt(key_toolbarPosition, toolbarPosition);
                     EditorPrefs.SetInt(key_toolbarOffset, toolbarOffset);
                 }
