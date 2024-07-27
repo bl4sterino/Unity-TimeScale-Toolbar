@@ -1,0 +1,17 @@
+{
+  "name": "com.bl4st.unity-timescale-toolbar",
+  "version": "1.0.0",
+  "displayName": "TimeScale Toolbar",
+  "description": "Adds a toolbar to easily change the Game's timescale",
+  "documentationUrl": "https://github.com/bl4sterino/Unity-TimeScale-Toolbar/",
+  "keywords": [
+	"timescale",
+    "toolbar",
+    "utility",
+	"Editor"
+  ],
+  "author": {
+    "name": "Paul Berne",
+    "url": "https://github.com/bl4sterino/"
+  }
+}
