@@ -1,4 +1,4 @@
-# Unity-TimeScale-Toolbar
+# Unity TimeScale Toolbar
  
 Adds a slider to the main toolbar to quickly change Time.TimeScale.
 
