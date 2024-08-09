@@ -2,10 +2,6 @@ using UnityEditor;
 using UnityEngine;
 using UnityToolbarExtender;
 using System;
-using Unity.VisualScripting;
-using UnityEditor.UIElements;
-using UnityEditor.PackageManager.UI;
-using UnityEngine.UI;
 
 namespace bl4st.TimeScaleToolbar
 {
