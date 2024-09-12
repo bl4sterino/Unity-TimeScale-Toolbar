@@ -1,36 +1,116 @@
 using UnityEditor;
 using UnityEngine;
-using UnityToolbarExtender;
 using System;
+using UnityToolbarExtender;
 
 namespace bl4st.TimeScaleToolbar
 {
     [InitializeOnLoad]
     public class TimeScaleToolbar
     {
+        static readonly string key_enabled = "TimeScaleToolbar_Enabled";
+        static readonly string key_forcedOverride = "TimeScaleToolbar_ForcedOverride";
+        static readonly string key_timeScale = "TimeScaleToolbar_TimeScale";
+        static readonly string key_maxScale = "TimeScaleToolbar_Max";
+        static readonly string key_toolbarPosition = "TimeScaleToolbar_Position";
+        static readonly string key_toolbarOffset = "TimeScaleToolbar_Offset";
+        static readonly string[] toolbarPositions = { "Left", "Right" };
 
-        public static readonly string key_enabled = "TimeScaleToolbar_Enabled";
-        public static readonly string key_timeScale = "TimeScaleToolbar_TimeScale";
-        public static readonly string key_maxScale = "TimeScaleToolbar_Max";
-        public static readonly string key_toolbarPosition = "TimeScaleToolbar_Position";
-        public static readonly string key_toolbarOffset = "TimeScaleToolbar_Offset";
-        public static readonly string[] toolbarPositions = { "Left", "Right" };
+        static float _maxScale = 2f;
+        static float maxScale
+        {
+            get => _maxScale;
+            set
+            {
+                if (_maxScale != value)
+                {
+                    _maxScale = value;
+                    if (_maxScale < timeScale)
+                        timeScale = _maxScale;
+                    EditorPrefs.SetFloat(key_maxScale, _maxScale);
+                }
+            }
+        }
 
-        public static float timeScale;
-        public static float maxScale;
-        public static int toolbarPosition = 1;
-        public static int toolbarOffset;
-        public static bool enabled = true;
+        static int _toolbarPosition = 1;
+        static int toolbarPosition
+        {
+            get => _toolbarPosition;
+            set
+            {
+                if (_toolbarPosition != value)
+                {
+                    _toolbarPosition = value;
+                    EditorPrefs.SetInt(key_toolbarPosition, _toolbarPosition);
+                }
+            }
+        }
 
-        private static readonly float _sliderWidth = 200f;
-        private const int totalWidth = 350;
+
+        static int _toolbarOffset = 10;
+        static int toolbarOffset
+        {
+            get => _toolbarOffset;
+            set
+            {
+                if (_toolbarOffset != value)
+                {
+                    _toolbarOffset = value;
+                    EditorPrefs.SetInt(key_toolbarOffset, _toolbarOffset);
+                }
+            }
+        }
+
+
+        static bool enabled = true;
+
+        static bool _forcedOverride = false;
+        static bool forcedOverride
+        {
+            get => _forcedOverride;
+            set
+            {
+                if (_forcedOverride != value)
+                {
+                    _forcedOverride = value;
+                    EditorPrefs.SetBool(key_forcedOverride, _forcedOverride);
+                }
+            }
+        }
+
+        static float _timeScale = 1f;
+        static float timeScale
+        {
+            get => _timeScale;
+            set
+            {
+                if (_timeScale != value)
+                {
+                    _timeScale = value;
+                    EditorPrefs.SetFloat(key_timeScale, _timeScale);
+                }
+            }
+        }
+
+
+
+        static readonly float _sliderWidth = 150f;
 
 
         static TimeScaleToolbar()
         {
-            Initialize();
+            enabled = EditorPrefs.GetBool(key_enabled, true);
+            EditorPrefs.SetBool(key_enabled, enabled);
+
+            forcedOverride = EditorPrefs.GetBool(key_forcedOverride, false);
+            maxScale = EditorPrefs.GetFloat(key_maxScale, 2f);
+            toolbarPosition = EditorPrefs.GetInt(key_toolbarPosition, 1);
+            toolbarOffset = EditorPrefs.GetInt(key_toolbarOffset, 10);
+            timeScale = Mathf.Min(EditorPrefs.GetFloat(key_timeScale, 1f), maxScale);
             if(enabled)
-                UpdateDrawCallbacks();
+                SetVisibility();
+
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
         }
 
         static void UpdateDrawCallbacks()
@@ -59,20 +139,18 @@ namespace bl4st.TimeScaleToolbar
             SceneView.RepaintAll();
         }
 
-        private static void Initialize()
+        static void OnPlayModeStateChanged(PlayModeStateChange state)
         {
-            enabled = EditorPrefs.GetBool(key_enabled, true);
-            maxScale = EditorPrefs.GetFloat(key_maxScale, 2f);
-            timeScale = Mathf.Min(EditorPrefs.GetFloat(key_timeScale, 1f), maxScale);
-            toolbarPosition = EditorPrefs.GetInt(key_toolbarPosition, 1);
-            toolbarOffset = EditorPrefs.GetInt(key_toolbarOffset, 10);
-
-            EditorPrefs.SetFloat(key_timeScale, timeScale);
-            EditorPrefs.SetBool(key_enabled, enabled);
-            EditorPrefs.SetFloat(key_maxScale, maxScale);
-            EditorPrefs.SetInt(key_toolbarOffset, toolbarOffset);
+            if (state == PlayModeStateChange.EnteredPlayMode)
+            {
+                if (enabled)
+                    Time.timeScale = timeScale;
+                else
+                    Time.timeScale = 1f;
+            }
         }
 
+        static GUIContent forcedOverrideToggleContent = new GUIContent("", "Toggles forced timeScale override");
         static void OnToolbarGUI()
         {
             GUILayout.Space(toolbarOffset);
@@ -80,23 +158,35 @@ namespace bl4st.TimeScaleToolbar
 
             GUILayout.Label("TimeScale", GUILayout.Width(70));
 
-            float oldScale = timeScale;
+            if (Time.timeScale != timeScale)
+            {
+                if (forcedOverride)
+                    Time.timeScale = timeScale;
+                else
+                    timeScale = Time.timeScale;
+            }
+
             timeScale = GUILayout.HorizontalSlider(timeScale, 0f, maxScale, GUILayout.Width(_sliderWidth));
 
             GUILayout.Space(4);
-
             GUILayout.Label(timeScale.ToString("F2"), GUILayout.Width(45));
+            GUILayout.Space(-12);
+            forcedOverride = GUILayout.Toggle(forcedOverride, forcedOverrideToggleContent);
 
             if (GUILayout.Button("Reset", GUILayout.Width(50)))
+            {
                 timeScale = 1f;
-
-            Time.timeScale = timeScale;
+                Time.timeScale = timeScale;
+            }
 
             GUILayout.EndHorizontal();
 
-            if (oldScale != timeScale)
-                EditorPrefs.SetFloat(key_timeScale, timeScale);
+            if (Time.timeScale != timeScale)
+                Time.timeScale = timeScale;
         }
+
+        static GUIContent forcedOverrideSettingsContent = new GUIContent("Forced Override", "Toggles forced timeScale override");
+        static GUIContent enabledSettingsContent = new GUIContent("Enabled", "Toggles toolbar visibility and behaviour");
 
         [SettingsProvider]
         public static SettingsProvider MyTimeScaleToolbarSettingsProvider()
@@ -107,17 +197,25 @@ namespace bl4st.TimeScaleToolbar
                 label = "TimeScale Toolbar",
                 guiHandler = (searchContext) =>
                 {
-                    bool oldEnable = enabled;
-                    enabled = EditorGUILayout.Toggle("Enable", enabled);
-                    if (oldEnable != enabled)
+                    bool oldEnabled = enabled;
+                    enabled = EditorGUILayout.Toggle(enabledSettingsContent, enabled);
+                    if(enabled != oldEnabled)
+                    {
                         SetVisibility();
+                        EditorPrefs.SetBool(key_enabled, enabled);
+                        if(!enabled)
+                            Time.timeScale = 1f;
+                        else
+                            Time.timeScale = timeScale;
+                    }
+
+                    forcedOverride = EditorGUILayout.Toggle(forcedOverrideSettingsContent, forcedOverride);
 
                     int oldPos = toolbarPosition;
                     toolbarPosition = EditorGUILayout.Popup("Toolbar Position", toolbarPosition, toolbarPositions);
                     if (oldPos != toolbarPosition && enabled)
                         UpdateDrawCallbacks();
 
-                    int oldOffset = toolbarOffset;
                     toolbarOffset = EditorGUILayout.IntSlider("Position Offset", toolbarOffset, 0, Screen.width);
 
                     maxScale = Mathf.Clamp(EditorGUILayout.FloatField("Maximum TimeScale", maxScale), 1f, 100f);
@@ -130,18 +228,9 @@ namespace bl4st.TimeScaleToolbar
                     EditorGUILayout.Space(15);
                     EditorGUILayout.LabelField("If the toolbar is not properly updated, press any key", italicStyle);
                     EditorGUILayout.LabelField("or hover the mouse above the toolbar", italicStyle);
-
-                    EditorPrefs.SetBool(key_enabled, enabled);
-                    EditorPrefs.SetFloat(key_maxScale, maxScale);
-                    EditorPrefs.SetInt(key_toolbarPosition, toolbarPosition);
-                    EditorPrefs.SetInt(key_toolbarOffset, toolbarOffset);
                 }
             };
             return provider;
         }
     }
-
-
-
-
 }
